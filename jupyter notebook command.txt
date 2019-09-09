@@ -1,0 +1,5 @@
+
+
+jupyter notebook --notebook-dir D:\CS231n\
+
+also, search for rtl using CTRL+SHIFT+F
