@@ -79,8 +79,13 @@ class TwoLayerNet(object):
         # shape (N, C).                                                             #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        
+        relu = lambda x : x * (x > 0)
+        layer1 = np.dot(X,W1) + b1 # [N,H]
+        layer2 = relu(layer1) # [N,H]
+        layer3 = np.dot(layer2,W2) + b2 # [N,C]
+        scores=layer3 # [N,C]
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -97,8 +102,12 @@ class TwoLayerNet(object):
         # classifier loss.                                                          #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        
+        scores-=np.max(scores,axis=1)[:,np.newaxis] # prevent exponent pop-corn, max value is now 0
+        scores=np.exp(scores)
+        probabilities = scores / np.sum(scores,axis=1)[:,np.newaxis]
+        loss=-np.sum(np.log(probabilities[np.arange(N),y]))/N
+        loss+=reg*np.sum(W1*W1)*0.5 + reg*np.sum(W2*W2)*0.5
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -110,8 +119,17 @@ class TwoLayerNet(object):
         # grads['W1'] should store the gradient on W1, and be a matrix of same size #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        # input -> layer 1 (Fully-Connected) -> ReLU (layer 2)-> layer 3 (Fully-Connected)-> Softmax (layer 4) -> Output
+        dlayer4 = 1.0
+        probabilities[np.arange(N),y]-=1
+        probabilities/=N
+        dlayer3 = probabilities * dlayer4 # [N,C]
+        dlayer2 = np.dot(dlayer3,W2.T) # [N,H]
+        dlayer1 = dlayer2 * (layer1>=0) # [N,H]
+        grads['W1'] = np.dot(X.T,dlayer1) + reg*W1 # [D,H]
+        grads['b1'] = np.sum(dlayer1,axis=0) # [H,]
+        grads['W2'] = np.dot(layer2.T,dlayer3) + reg*W2 # [H,C]
+        grads['b2'] = np.sum(dlayer3,axis=0) # [C,]
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -156,7 +174,9 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            elem_indices=np.random.choice(num_train,batch_size)
+            X_batch=X[elem_indices]
+            y_batch=y[elem_indices]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -172,7 +192,10 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            self.params['W1']-=grads['W1']*learning_rate
+            self.params['b1']-=grads['b1']*learning_rate
+            self.params['W2']-=grads['W2']*learning_rate
+            self.params['b2']-=grads['b2']*learning_rate
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
