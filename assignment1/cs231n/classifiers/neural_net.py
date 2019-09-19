@@ -80,12 +80,16 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         
+#         relu = lambda x : x * (x > 0)
+#         layer1 = np.dot(X,W1) + b1 # [N,H]
+#         layer2 = relu(layer1) # [N,H]
+#         layer3 = np.dot(layer2,W2) + b2 # [N,C]
+#         scores=layer3 # [N,C]
         relu = lambda x : x * (x > 0)
-        layer1 = np.dot(X,W1) + b1 # [N,H]
-        layer2 = relu(layer1) # [N,H]
-        layer3 = np.dot(layer2,W2) + b2 # [N,C]
-        scores=layer3 # [N,C]
-        
+        z = np.dot(X,W1) + b1 # [N,H] ; z = Wx + b1
+        h = relu(z) # [N,H] ; h = ReLU(z)
+        theta = np.dot(h,W2) + b2 # [N,C] ; theta = Uh + b2
+        scores = theta # [N,C]
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -120,16 +124,44 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         # input -> layer 1 (Fully-Connected) -> ReLU (layer 2)-> layer 3 (Fully-Connected)-> Softmax (layer 4) -> Output
-        dlayer4 = 1.0
-        probabilities[np.arange(N),y]-=1
+        
+#         relu = lambda x : x * (x > 0)
+#         z = np.dot(X,W1) + b1 # [N,H] ; z = Wx + b1
+#         h = relu(layer1) # [N,H] ; h = ReLU(z)
+#         theta = np.dot(layer2,W2) + b2 # [N,C] ; theta = Uh + b2
+#         scores=layer3 # [N,C]
+        
+        # These are all computed using help from gradient-notes Stanford CS224n
+        
+        probabilities[np.arange(N),y]-=1 # y^ = softmax(theta)
         probabilities/=N
-        dlayer3 = probabilities * dlayer4 # [N,C]
-        dlayer2 = np.dot(dlayer3,W2.T) # [N,H]
-        dlayer1 = dlayer2 * (layer1>=0) # [N,H]
-        grads['W1'] = np.dot(X.T,dlayer1) + reg*W1 # [D,H]
-        grads['b1'] = np.sum(dlayer1,axis=0) # [H,]
-        grads['W2'] = np.dot(layer2.T,dlayer3) + reg*W2 # [H,C]
-        grads['b2'] = np.sum(dlayer3,axis=0) # [C,]
+        dtheta = probabilities # [N,C] - dtheta
+        dz = np.dot(dtheta, W2.T) * np.sign(h) # [N,H] - This is dz
+        grads['W1'] = np.dot(X.T, dz) + reg*W1 # DxN x NxH  = DxH 
+        grads['b1'] = np.sum(dz,axis=0) # [H]
+        grads['W2'] = np.dot(h.T,dtheta) + reg*W2 # HxN x NxC = HxC
+        grads['b2'] = np.sum(dtheta,axis=0) # [C]
+        
+#         dlayer3 = probabilities * dlayer4 # [N,C]
+#         dlayer2 = np.dot(dlayer3,W2.T) # [N,H]
+#         dlayer1 = dlayer2 * (layer1>=0) # [N,H]
+#         grads['W1'] = np.dot(X.T,dlayer1) + reg*W1 # [D,H]
+#         grads['b1'] = np.sum(dlayer1,axis=0) # [H,]
+#         grads['W2'] = np.dot(layer2.T,dlayer3) + reg*W2 # [H,C]
+#         grads['b2'] = np.sum(dlayer3,axis=0) # [C,]
+    
+    
+    
+#         dlayer4 = 1.0
+#         probabilities[np.arange(N),y]-=1 # y^ = softmax(theta)
+#         probabilities/=N
+#         dlayer3 = probabilities * dlayer4 # [N,C]
+#         dlayer2 = np.dot(dlayer3,W2.T) # [N,H]
+#         dlayer1 = dlayer2 * (layer1>=0) # [N,H]
+#         grads['W1'] = np.dot(X.T,dlayer1) + reg*W1 # [D,H]
+#         grads['b1'] = np.sum(dlayer1,axis=0) # [H,]
+#         grads['W2'] = np.dot(layer2.T,dlayer3) + reg*W2 # [H,C]
+#         grads['b2'] = np.sum(dlayer3,axis=0) # [C,]
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -240,8 +272,7 @@ class TwoLayerNet(object):
         # TODO: Implement this function; it should be VERY simple!                #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        y_pred = np.argmax(np.dot(np.dot(X,self.params['W1'])+self.params['b1'],self.params['W2']) + self.params['b2'], axis=1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
