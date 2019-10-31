@@ -186,9 +186,13 @@ class FullyConnectedNet(object):
         # parameters should be initialized to zeros.                               #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        
+        for i in range(-1, self.num_layers-1):
+            prev_layer = hidden_dims[i] if i >= 0 else input_dim
+            current_layer = hidden_dims[i+1] if i < (self.num_layers-2) else num_classes
+            self.params['W'+ str(i + 2)] = np.random.normal(0, weight_scale, (prev_layer,current_layer))
+            self.params['b'+ str(i + 2)] = np.zeros(current_layer)
+            
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -249,8 +253,29 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        
+        #    For a network with L layers, the architecture will be
+        #    {affine - [batch/layer norm] - relu - [dropout]} x (L - 1) - affine - softmax
+        #     where batch/layer normalization and dropout are optional, and the {...} block is
+        #     repeated L - 1 times.
+        
+        # TODO: NOT YET IMPLEMENTED BATCH/LAYER NORM
+        prev_activation = X
+        cache_backpass = []
+        
+        # [affine - relu] x (L-1)
+        for i in range(self.num_layers-1):
+            affine_relu_out, affine_relu_cache = affine_relu_forward(prev_activation, self.params['W' + str(i + 1)], self.params['b' + str(i + 1)])
+            prev_activation = affine_relu_out
+            cache_backpass.append(affine_relu_cache)
+            
+        # affine
+        affine_out, affine_cache = affine_forward(prev_activation, self.params['W' + str(self.num_layers)],self.params['b' + str(self.num_layers)])
+        
+        cache_backpass.append(affine_cache)
+        scores = affine_out
+        
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -277,7 +302,22 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, d_scores = softmax_loss(scores, y)
+        
+        # affine
+        d_prev, grads['W' + str(self.num_layers)],  grads['b' + str(self.num_layers)] = affine_backward(d_scores, cache_backpass.pop())
+        
+         # [affine - relu] x (L-1)
+        for i in reversed(range(self.num_layers-1)):
+            d_affine_relu_x, grads['W' + str(i + 1)],  grads['b' + str(i + 1)] = affine_relu_backward(d_prev, cache_backpass.pop())
+            d_prev = d_affine_relu_x
+
+        for i in range(self.num_layers):
+            grads['W' + str(i + 1)] += self.reg * self.params['W' + str(i + 1)]
+            loss+= 0.5 * self.reg * np.sum(self.params['W' + str(i + 1)] * self.params['W' + str(i + 1)])
+            
+        # wow man, worked on first try. Way to go <3 !
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
